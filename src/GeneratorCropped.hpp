@@ -57,7 +57,8 @@ class DatasetGeneratorCropped_t : public DatasetGenerator_t {
     DatasetGeneratorCropped_t() = delete;
     explicit DatasetGeneratorCropped_t(std::ofstream& out, int imgClass,
                                        const StrBuffer_t& tsAnnots,
-                                       const std::string& classID);
+                                       const std::string& classID,
+                                       std::string className);
     virtual ~DatasetGeneratorCropped_t() = default;
 
     /************************************************************************************

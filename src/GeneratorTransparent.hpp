@@ -20,7 +20,8 @@
 class DatasetGeneratorTransparent_t : public DatasetGenerator_t {
    public:
     DatasetGeneratorTransparent_t() = delete;
-    explicit DatasetGeneratorTransparent_t(std::ofstream& out, int imgClass);
+    explicit DatasetGeneratorTransparent_t(std::ofstream& out, int imgClass,
+                                           std::string className);
     virtual ~DatasetGeneratorTransparent_t() = default;
 
     /************************************************************************************

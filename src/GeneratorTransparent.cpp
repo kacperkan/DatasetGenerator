@@ -11,9 +11,9 @@
 #include "GeneratorTransparent.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-DatasetGeneratorTransparent_t::DatasetGeneratorTransparent_t(std::ofstream& out,
-                                                             int imgClass)
-    : DatasetGenerator_t{out, imgClass} {
+DatasetGeneratorTransparent_t::DatasetGeneratorTransparent_t(
+    std::ofstream& out, int imgClass, std::string className)
+    : DatasetGenerator_t{out, imgClass, className} {
     m_dist5 = PRNG::Uniform_t{1, 5};
     m_dist50 = PRNG::Uniform_t{0, 40};
     m_distGradient = PRNG::Uniform_t{0, 180};
@@ -162,15 +162,15 @@ void DatasetGeneratorTransparent_t::opSaltNPepperNoise(cv::Mat& m) {
 }
 
 void DatasetGeneratorTransparent_t::opToGrayscale(cv::Mat& m) {
-#ifndef GRAYSCALE
     ImageProcessing::toGrayscale(m);
-#endif
 }
 
 void DatasetGeneratorTransparent_t::opInvertColors(cv::Mat& m) {
-#ifndef INVERT
-    ImageProcessing::invertColors(m);
-#endif
+    m_prngProbability = m_probability(m_rng);
+
+    if (m_prngProbability <= 50) {
+        ImageProcessing::invertColors(m);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -310,6 +310,8 @@ void DatasetGeneratorTransparent_t::generateDataset(cv::Mat m, cv::Mat m2)
 
     // To Grayscale
     opToGrayscale(m2);
+
+    opInvertColors(m2);
 
     /////////////////////// CREATE IMG & ANNOTATION ///////////////////////
 

@@ -9,13 +9,26 @@
  */
 
 // Local
-#ifdef ROI_SELECTION
-#include "ROI.hpp"
-#endif
-
 #include "GeneratorCropped.hpp"
 #include "GeneratorTransparent.hpp"
 #include "Utils.hpp"
+
+void resizeWithRatio(cv::Mat& img, size_t height, size_t width) {
+    float w = img.cols, h = img.rows;
+    float ratio = w / h;
+    cv::Mat newImg;
+    int newWidth, newHeight;
+
+    if (h < w) {
+        newHeight = height;
+        newWidth = (int)(newHeight * ratio);
+    } else {
+        newWidth = width;
+        newHeight = newWidth / ratio;
+    }
+    cv::resize(img, newImg, cv::Size(newWidth, newHeight));
+    img = newImg;
+}
 
 /**
  * @brief Entry point
@@ -25,27 +38,20 @@ int main(int argc, char** argv) {
     // Locals
 
     int imgClass = 0;
-    int imgCounter = 0;
     int ret = 0;
-    int w = 0;
-    int h = 0;
 
     size_t randNum = 0;
-    size_t i = 0;
-    constexpr size_t nGenImgs = 10;
+    size_t randBgIndex = 0;
 
     std::string pathToBackgrounds;
     std::string pathToImages;
-    std::string classID;
+    int nImagesToGenerate;
+    int maxPerBackgroundImages;
 
     Utils::ImgBuffer bgs;
     Utils::ImgBuffer imgs;
 
     Utils::StrBuffer dirs;
-#ifndef IMG_TRANSPARENT
-    Utils::StrBuffer tsAnnotations;
-    Utils::StrBuffer imgNames;
-#endif
 
     cv::Mat bg;
     cv::Mat img;
@@ -53,7 +59,8 @@ int main(int argc, char** argv) {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Parse arguments
 
-    if ((ret = Utils::parseArgs(argc, argv, pathToBackgrounds, pathToImages)) !=
+    if ((ret = Utils::parseArgs(argc, argv, pathToBackgrounds, pathToImages,
+                                nImagesToGenerate, maxPerBackgroundImages)) !=
         0) {
         return ret;
     }
@@ -70,126 +77,103 @@ int main(int argc, char** argv) {
     std::mt19937 rng;
     rng.seed(std::random_device()());
 
-    PRNG::Uniform_t distX = PRNG::Uniform_t{0, (size_t)bgs.at(0).cols - 450};
-    PRNG::Uniform_t distY = PRNG::Uniform_t{0, (size_t)bgs.at(0).rows - 350};
-    PRNG::Uniform_t distI;
-
-#ifdef RANDOM_W_H
-    PRNG::Uniform_t distW = PRNG::Uniform_t{225, 300};
-    PRNG::Uniform_t distH = PRNG::Uniform_t{150, 200};
-    PRNG::Uniform_t distB = PRNG::Uniform_t{0, 20};
-#endif
-
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Get image width & height
 
-#ifdef RANDOM_W_H
-    w = distW(rng);
-    h = distH(rng);
-
-    if (distB(rng) < 3) {
-        std::swap(w, h);
-    }
-#else
-    w = 407;
-    h = 309;
-#endif
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    // Regions of interest selection
-
-#ifdef ROI_SELECTION
-    ROIBuffer_t roiBuffer;
-    cv::Mat exampleBg;
-
-    exampleBg = cv::imread("data/roi-selection.png");
-    cv::resize(exampleBg, exampleBg, cv::Size{w, h});
-    roiBuffer = getRegionsOfInterest(exampleBg);
-#endif
+    std::experimental::filesystem::path mainOutputDir(Utils::outDir);
+    std::experimental::filesystem::path imagesDir(pathToImages);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Iterate over all TS classes in given directory, load TS from each of them
 
     for (auto& path : dirs) {
-        i = 0;
-        imgs.clear();
-#ifndef IMG_TRANSPARENT
-        imgNames.clear();
-        tsAnnotations.clear();
-#endif
-
-#ifdef IMG_TRANSPARENT
         Utils::loadImages("png", path, imgs,
                           cv::IMREAD_UNCHANGED);  // With alpha-channel
-#else
-        Utils::loadImages(
-            "ppm", path, imgs, imgNames,
-            cv::IMREAD_COLOR);  // Cropped classification TS dataset
-#endif
+    }
 
-        size_t nBackgrounds = bgs.size();
-        size_t nImages = imgs.size();
+    size_t nBackgrounds = bgs.size();
+    size_t nImages = imgs.size();
 
-        if (nBackgrounds == 0 || nImages == 0) {
-            std::cerr << "E: Failed to load images." << std::endl;
-            return 1;
-        }
+    if (nBackgrounds == 0 || nImages == 0) {
+        std::cerr << "E: Failed to load images." << std::endl;
+        return 1;
+    }
 
-        classID = Utils::getClassID(path);
-        imgClass = Utils::getImgClass(path);
+    PRNG::Uniform_t distI = PRNG::Uniform_t(0, nImages - 1);
+    PRNG::Uniform_t distB = PRNG::Uniform_t(0, nBackgrounds - 1);
 
-#ifndef IMG_TRANSPARENT
-        Utils::readAnnotations(path, tsAnnotations);
-#endif
+    PRNG::Uniform_t distX;
+    PRNG::Uniform_t distY;
+    PRNG::Uniform_t distW;
 
-        distI = PRNG::Uniform_t{0, nImages - 1};
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // Generate `nGenImgs` images for each of the TS classes
 
-        ///////////////////////////////////////////////////////////////////////////////////////////////
-        // Generate `nGenImgs` images for each of the TS classes
+    float minPercentageOfBgWidth = 0.4;
+    float maxPercentageOfBgWidth = 0.6;
 
-        for (imgCounter = 0; imgCounter < nGenImgs; imgCounter++) {
-            bgs.at(imgCounter % nBackgrounds).copyTo(bg);
+    PRNG::Uniform_t perImageDist =
+        PRNG::Uniform_t{1, (size_t)maxPerBackgroundImages};
 
-            // Select random part of the background
-            cv::Rect roi{(int)distX(rng), (int)distY(rng), w, h};
-            bg = bg(roi);
+    size_t minHeight = 1080;
+    size_t minWidth = 1920;
 
-#ifdef IMG_TRANSPARENT
-            imgs.at(i).copyTo(img);
-#else
+    for (int imgCounter = 0; imgCounter < nImagesToGenerate; imgCounter++) {
+        randBgIndex = distB(rng);
+        bgs.at(randBgIndex).image.copyTo(bg);
+        resizeWithRatio(bg, minHeight, minWidth);
+        float viewRatio = (float)bg.cols / bg.rows;
+
+        distW = PRNG::Uniform_t(
+            (size_t)std::floor(
+                std::max(minPercentageOfBgWidth * bg.cols, 1.0f)),
+            (size_t)std::floor((maxPercentageOfBgWidth * bg.cols)));
+
+        int w = (int)distW(rng);
+        int h = (int)((float)w / viewRatio);
+
+        distX = PRNG::Uniform_t{0, (size_t)(bg.cols - w - 1)};
+        distY = PRNG::Uniform_t{0, (size_t)(bg.rows - h - 1)};
+
+        int x = (int)distX(rng);
+        int y = (int)distY(rng);
+        std::cout << "Generating dimensions: (x, y, w, h) ";
+        std::cout << x << ", " << y << ", " << w << ", " << h << std::endl;
+
+        // Select random part of the background
+        cv::Rect roi{x, y, w, h};
+        bg = bg(roi);
+
+        int imagesPerBackground = perImageDist(rng);
+        // Create output annotation file passed to generator
+        std::ofstream annotFile(
+            mainOutputDir /
+            (std::to_string(imgCounter) + Utils::antExt).c_str());
+
+        cv::cvtColor(bg, bg, cv::COLOR_BGR2GRAY);
+        cv::cvtColor(bg, bg, cv::COLOR_GRAY2BGR);
+
+        for (int logoCount = 0; logoCount < imagesPerBackground; logoCount++) {
             randNum = distI(rng);
-            imgs.at(randNum).copyTo(img);
-#endif
+            imgs.at(randNum).image.copyTo(img);
 
-            // Create output annotation file passed to generator
-            std::ofstream annotFile(Utils::outDir + classID +
-                                    std::to_string(imgCounter) + Utils::antExt);
+            const std::string className = imgs.at(randNum).className;
 
             // Image & annotation generator
-            DatasetGenerator_t* generator;
+            imgClass = Utils::getImgClass((imagesDir / className).c_str());
 
             // Generate image with annotations
-#ifdef IMG_TRANSPARENT
-            generator = new DatasetGeneratorTransparent_t{annotFile, imgClass};
-#else
-            generator = new DatasetGeneratorCropped_t{
-                annotFile, imgClass, tsAnnotations, imgNames.at(randNum)};
-#endif
+            DatasetGenerator_t* generator = new DatasetGeneratorTransparent_t{
+                annotFile, imgClass, className};
 
-#ifdef ROI_SELECTION
-            generator->generateDataset(roiBuffer, bg, img);
-#else
             generator->generateDataset(bg, img);
-#endif
-
-            // Save image
-            imwrite(Utils::outDir + classID + std::to_string(imgCounter) +
-                        Utils::imgExt,
-                    bg);
-
-            // Move to next TS or start from the beginning
-            i = (i == (nImages - 1)) ? 0 : i + 1;
         }
+
+        // Save image
+        cv::imwrite(
+            (mainOutputDir / (std::to_string(imgCounter) + Utils::imgExt))
+                .c_str(),
+            bg);
     }
 
     // Destroy OpenCV windows if exists

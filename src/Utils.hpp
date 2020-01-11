@@ -22,12 +22,17 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+struct Logo {
+    cv::Mat image;
+    std::string className;
+};
+
 /**
  * @brief Namespace which contains utils implementation
  */
 namespace Utils {
 /** @brief Buffer of images */
-using ImgBuffer = std::vector<cv::Mat>;
+using ImgBuffer = std::vector<Logo>;
 /** @brief Buffer of strings */
 using StrBuffer = std::vector<std::string>;
 
@@ -94,7 +99,8 @@ void loadImages(const std::string& ext, const std::string& path,
  * @param [out] pathImg Directory with images placed into bacgrounds
  */
 int parseArgs(int argc, char** argv, std::string& pathBgs,
-              std::string& pathImgs);
+              std::string& pathImgs, int& nImagesToGnerate,
+              int& maxPerBackgroundImages);
 
 /************************************************************************************
  * @brief Returns buffer of strings with all directories in path

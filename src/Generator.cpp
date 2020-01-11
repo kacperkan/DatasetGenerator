@@ -11,8 +11,13 @@
 #include "Generator.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-DatasetGenerator_t::DatasetGenerator_t(std::ofstream& out, int imgClass)
-    : m_out{out}, m_class{imgClass}, m_prngProbability{0}, m_prngValue{0} {
+DatasetGenerator_t::DatasetGenerator_t(std::ofstream& out, int imgClass,
+                                       const std::string className)
+    : m_out{out},
+      m_class{imgClass},
+      m_prngProbability{0},
+      m_prngValue{0},
+      className(className) {
     srand(time(NULL));
     m_rng.seed(std::random_device()());
 
@@ -58,7 +63,6 @@ void DatasetGenerator_t::adjustPosition(const cv::Mat& m, cv::Mat& m2,
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void DatasetGenerator_t::createAnnotation(const cv::Mat& m, const cv::Mat& m2,
                                           const int& x, const int& y) {
-#ifdef ANNOTATION
     // Save image class
     m_out << m_class << " ";
     // Save relative position
@@ -66,8 +70,9 @@ void DatasetGenerator_t::createAnnotation(const cv::Mat& m, const cv::Mat& m2,
     m_out << (y + ((double)m2.rows / 2)) / m.rows << " ";
     // Save relative proportion
     m_out << (double)m2.cols / m.cols << " ";
-    m_out << (double)m2.rows / m.rows << std::endl;
-#endif
+    m_out << (double)m2.rows / m.rows << " ";
+
+    m_out << className << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

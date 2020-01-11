@@ -13,7 +13,8 @@
 namespace Utils {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 int parseArgs(int argc, char** argv, std::string& pathBgs,
-              std::string& pathImgs) {
+              std::string& pathImgs, int& nImagesToGenerate,
+              int& maxPerBackgroundImages) {
     if (argc < 3) {
         printUsage();
         return 1;
@@ -21,6 +22,8 @@ int parseArgs(int argc, char** argv, std::string& pathBgs,
 
     pathBgs = argv[1];
     pathImgs = argv[2];
+    nImagesToGenerate = atoi(argv[3]);
+    maxPerBackgroundImages = atoi(argv[4]);
 
     // Used to be more complex parsing back in the days
 
@@ -34,8 +37,21 @@ void loadImages(const std::string& ext, const std::string& path,
     cv::glob(cv::String{path} + cv::String{"/*."} + cv::String{ext}, strBuffer,
              false);
 
+    cv::Mat img;
+    std::string cls;
+
+    std::experimental::filesystem::path filePath;
+
     for (auto& it : strBuffer) {
-        imgs.push_back(cv::imread(it, mode));
+        img = cv::imread(it, mode);
+        filePath = it;
+        cls = filePath.parent_path().filename();
+
+        Logo logo;
+        logo.image = img;
+        logo.className = cls;
+
+        imgs.push_back(logo);
     }
 }
 
@@ -46,8 +62,21 @@ void loadImages(const std::string& ext, const std::string& path,
     cv::glob(cv::String{path} + cv::String{"/*."} + cv::String{ext}, strBuffer,
              false);
 
+    cv::Mat img;
+    std::string cls;
+    std::experimental::filesystem::path filePath;
+
     for (auto& it : strBuffer) {
-        imgs.push_back(cv::imread(it, mode));
+        img = cv::imread(it, mode);
+        filePath = it;
+
+        cls = filePath.parent_path().filename();
+
+        Logo logo;
+        logo.image = img;
+        logo.className = cls;
+
+        imgs.push_back(logo);
         names.push_back(getClassID(it));
     }
 }

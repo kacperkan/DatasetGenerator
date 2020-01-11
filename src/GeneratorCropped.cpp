@@ -13,8 +13,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 DatasetGeneratorCropped_t::DatasetGeneratorCropped_t(
     std::ofstream& out, int imgClass, const StrBuffer_t& tsAnnots,
-    const std::string& classID)
-    : DatasetGenerator_t{out, imgClass},
+    const std::string& classID, std::string className)
+    : DatasetGenerator_t{out, imgClass, className},
       m_tsAnnotations{tsAnnots},
       m_classID{classID} {
     m_distSignSize = PRNG::Uniform_t{40, 100};

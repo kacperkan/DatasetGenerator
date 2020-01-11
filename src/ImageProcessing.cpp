@@ -361,14 +361,9 @@ void saltNPepperNoise(cv::Mat& img) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void toGrayscale(cv::Mat& img) {
-    cv::Mat grayscaled;
-    cv::cvtColor(img, grayscaled, cv::COLOR_BGR2GRAY);
-    img = grayscaled;
+    cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(img, img, cv::COLOR_GRAY2BGR);
 }
 
-void invertColors(cv::Mat& img) {
-    cv::Mat inverted;
-    inverted = 255 - img;
-    img = inverted;
-}
+void invertColors(cv::Mat& img) { img = cv::Scalar(255, 255, 255) - img; }
 }  // namespace ImageProcessing

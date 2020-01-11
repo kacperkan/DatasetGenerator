@@ -23,6 +23,9 @@ HEADERS    = $(wildcard $(SRC)/*.h)
 SOURCES    = $(wildcard $(SRC)/*.cpp)
 OBJS       = $(patsubst %.cpp, %.o, $(SOURCES))
 
+MAX_IMAGES_PER_BG = 7
+IMAGES_TO_GENERATE = 1000
+
 .PHONY: all
 
 
@@ -102,6 +105,9 @@ CFLAGS 	  += -DINVERT
 CFLAGS    += -DSEAMLESS_CLONE
 
 
+# ========================== Debugging ==========================
+
+CFLAGS 	  += -g -Wall -Wextra
 
 # ======================== Compilation ========================
 
@@ -129,11 +135,11 @@ cleanout:
 
 # Run transparent generator
 runt:
-	./$(BIN_NAME) data/backgrounds/ data/transparent
+	./$(BIN_NAME) data/backgrounds/ data/transparent  $(IMAGES_TO_GENERATE) $(MAX_IMAGES_PER_BG)
 
 # Run cropped generator
 runc:
-	./$(BIN_NAME) data/backgrounds/ data/cropped
+	./$(BIN_NAME) data/backgrounds/ data/cropped $(IMAGES_TO_GENERATE) $(MAX_IMAGES_PER_BG)
 
 # Generate code documentation
 $(DOC):

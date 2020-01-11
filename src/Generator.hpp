@@ -37,7 +37,8 @@
  */
 class DatasetGenerator_t {
    public:
-    explicit DatasetGenerator_t(std::ofstream& out, int imgClass);
+    explicit DatasetGenerator_t(std::ofstream& out, int imgClass,
+                                const std::string className);
     virtual ~DatasetGenerator_t() = default;
 
     /************************************************************************************
@@ -56,6 +57,7 @@ class DatasetGenerator_t {
 #endif
 
    protected:
+    std::string className;
     /************************************************************************************
      * @brief If generated position is outside of bounds
      *        method adjust position correctly
