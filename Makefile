@@ -89,6 +89,9 @@ CFLAGS    += -DREALISTIC_LIGHTNING
 # Add partial traffic sign to dataset
 CFLAGS    += -DPARTIAL_TS
 
+# Convert images to grayscale
+CFLAGS 	  += -DGRAYSCALE
+
 
 
 # ========================== Cropped ==========================
