@@ -167,6 +167,12 @@ void DatasetGeneratorTransparent_t::opToGrayscale(cv::Mat& m) {
 #endif
 }
 
+void DatasetGeneratorTransparent_t::opInvertColors(cv::Mat& m) {
+#ifndef INVERT
+    ImageProcessing::invertColors(m);
+#endif
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void DatasetGeneratorTransparent_t::opAddGradient(cv::Mat& m) {
 #ifdef GRADIENT

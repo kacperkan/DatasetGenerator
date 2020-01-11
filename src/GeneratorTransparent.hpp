@@ -117,6 +117,7 @@ class DatasetGeneratorTransparent_t : public DatasetGenerator_t {
      * @param m [in, out] Modified image
      */
     void opToGrayscale(cv::Mat& m);
+    void opInvertColors(cv::Mat& m);
 
    private:
     /** @brief 1-5   Pseudo-random uniform distribution */

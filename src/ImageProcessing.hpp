@@ -145,5 +145,6 @@ void saltNPepperNoise(cv::Mat& img);
  * @param [in, out] img Image to be converted to grayscale
  */
 void toGrayscale(cv::Mat& img);
+void invertColors(cv::Mat& img);
 
 }  // namespace ImageProcessing

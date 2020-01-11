@@ -92,6 +92,8 @@ CFLAGS    += -DPARTIAL_TS
 # Convert images to grayscale
 CFLAGS 	  += -DGRAYSCALE
 
+CFLAGS 	  += -DINVERT
+
 
 
 # ========================== Cropped ==========================

@@ -365,4 +365,10 @@ void toGrayscale(cv::Mat& img) {
     cv::cvtColor(img, grayscaled, cv::COLOR_BGR2GRAY);
     img = grayscaled;
 }
+
+void invertColors(cv::Mat& img) {
+    cv::Mat inverted;
+    inverted = 255 - img;
+    img = inverted;
+}
 }  // namespace ImageProcessing
