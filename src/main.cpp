@@ -119,61 +119,69 @@ int main(int argc, char** argv) {
     size_t minWidth = 1920;
 
     for (int imgCounter = 0; imgCounter < nImagesToGenerate; imgCounter++) {
-        randBgIndex = distB(rng);
-        bgs.at(randBgIndex).image.copyTo(bg);
-        resizeWithRatio(bg, minHeight, minWidth);
-        float viewRatio = (float)bg.cols / bg.rows;
+        try {
+            randBgIndex = distB(rng);
+            bgs.at(randBgIndex).image.copyTo(bg);
+            resizeWithRatio(bg, minHeight, minWidth);
+            float viewRatio = (float)bg.cols / bg.rows;
 
-        distW = PRNG::Uniform_t(
-            (size_t)std::floor(
-                std::max(minPercentageOfBgWidth * bg.cols, 1.0f)),
-            (size_t)std::floor((maxPercentageOfBgWidth * bg.cols)));
+            distW = PRNG::Uniform_t(
+                (size_t)std::floor(
+                    std::max(minPercentageOfBgWidth * bg.cols, 1.0f)),
+                (size_t)std::floor((maxPercentageOfBgWidth * bg.cols)));
 
-        int w = (int)distW(rng);
-        int h = (int)((float)w / viewRatio);
+            int w = (int)distW(rng);
+            int h = (int)((float)w / viewRatio);
 
-        distX = PRNG::Uniform_t{0, (size_t)(bg.cols - w - 1)};
-        distY = PRNG::Uniform_t{0, (size_t)(bg.rows - h - 1)};
+            distX = PRNG::Uniform_t{0, (size_t)(bg.cols - w - 1)};
+            distY = PRNG::Uniform_t{0, (size_t)(bg.rows - h - 1)};
 
-        int x = (int)distX(rng);
-        int y = (int)distY(rng);
-        std::cout << "Generating dimensions: (x, y, w, h) ";
-        std::cout << x << ", " << y << ", " << w << ", " << h << std::endl;
+            int x = (int)distX(rng);
+            int y = (int)distY(rng);
+            std::cout << "Generating dimensions: (x, y, w, h) ";
+            std::cout << x << ", " << y << ", " << w << ", " << h << std::endl;
 
-        // Select random part of the background
-        cv::Rect roi{x, y, w, h};
-        bg = bg(roi);
+            // Select random part of the background
+            cv::Rect roi{x, y, w, h};
+            bg = bg(roi);
 
-        int imagesPerBackground = perImageDist(rng);
-        // Create output annotation file passed to generator
-        std::ofstream annotFile(
-            mainOutputDir /
-            (std::to_string(imgCounter) + Utils::antExt).c_str());
+            int imagesPerBackground = perImageDist(rng);
+            // Create output annotation file passed to generator
+            std::ofstream annotFile(
+                mainOutputDir /
+                (std::to_string(imgCounter) + Utils::antExt).c_str());
 
-        cv::cvtColor(bg, bg, cv::COLOR_BGR2GRAY);
-        cv::cvtColor(bg, bg, cv::COLOR_GRAY2BGR);
+            cv::cvtColor(bg, bg, cv::COLOR_BGR2GRAY);
+            cv::cvtColor(bg, bg, cv::COLOR_GRAY2BGR);
 
-        for (int logoCount = 0; logoCount < imagesPerBackground; logoCount++) {
-            randNum = distI(rng);
-            imgs.at(randNum).image.copyTo(img);
+            for (int logoCount = 0; logoCount < imagesPerBackground;
+                 logoCount++) {
+                randNum = distI(rng);
+                imgs.at(randNum).image.copyTo(img);
 
-            const std::string className = imgs.at(randNum).className;
+                const std::string className = imgs.at(randNum).className;
 
-            // Image & annotation generator
-            imgClass = Utils::getImgClass((imagesDir / className).c_str());
+                // Image & annotation generator
+                imgClass = Utils::getImgClass((imagesDir / className).c_str());
 
-            // Generate image with annotations
-            DatasetGenerator_t* generator = new DatasetGeneratorTransparent_t{
-                annotFile, imgClass, className};
+                // Generate image with annotations
+                DatasetGenerator_t* generator =
+                    new DatasetGeneratorTransparent_t{annotFile, imgClass,
+                                                      className};
 
-            generator->generateDataset(bg, img);
+                generator->generateDataset(bg, img);
+            }
+
+            // Save image
+            cv::imwrite(
+                (mainOutputDir / (std::to_string(imgCounter) + Utils::imgExt))
+                    .c_str(),
+                bg);
+
+        } catch (cv::Exception e) {
+            std::cerr << e.err << std::endl;
+            imgCounter--;
         }
-
-        // Save image
-        cv::imwrite(
-            (mainOutputDir / (std::to_string(imgCounter) + Utils::imgExt))
-                .c_str(),
-            bg);
     }
 
     // Destroy OpenCV windows if exists
